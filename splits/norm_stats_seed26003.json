@@ -1,0 +1,19 @@
+{
+  "seed": 26003,
+  "computed_from": "train_split_only",
+  "pixel_range": "[0, 1]",
+  "dtype_seen_by_network": "float32",
+  "reduction": "float64 population mean and std (divide by N)",
+  "train_size": 45000,
+  "pixels_per_channel": 46080000,
+  "mean_rgb": [
+    0.4914319403921064,
+    0.48210663492914285,
+    0.4465611478784395
+  ],
+  "std_rgb": [
+    0.24694459021810497,
+    0.243417445436514,
+    0.2615348078344243
+  ]
+}

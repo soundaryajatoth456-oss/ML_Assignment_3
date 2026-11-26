@@ -1,0 +1,32 @@
+{
+  "author": "Praveen",
+  "roll": "m26csa003",
+  "seed": 26003,
+  "question": "Q3",
+  "written_before_training": "2026-11-10T17:48:52+05:30",
+  "bottlenecks": [32, 128, 512],
+  "parameter_counts": [267843, 661155, 2234403],
+  "architecture": "Three 3x3 convolutions, 32 then 64 then 128 channels, ReLU and 2x2 max-pool after each, linear map to the bottleneck, linear map back to 128x4x4, then three stride-2 transposed convolutions back to 32x32 with a sigmoid. No batch norm. The code has no activation. to_code.weight, to_code.bias and from_code.weight change with the bottleneck. from_code.bias has one entry per decoded unit, so it stays the same width.",
+  "images": "Float32 in [0, 1]. Classifiers in Q1 were normalised. These autoencoders are not, so MSE is on the pixel scale and PSNR uses a peak of 1.",
+  "optimiser": "AdamW, betas (0.9, 0.999), weight decay 0, cosine schedule to 0. Weight decay is off because it pulls reconstructions toward grey and would confound the bottleneck comparison.",
+  "weight_decay": 0.0,
+  "batch_size": 128,
+  "epochs": 20,
+  "probe_bottleneck": 128,
+  "probe_epochs": 4,
+  "probe_learning_rates": [0.0003, 0.001, 0.003],
+  "probe_rule": "Lowest best validation MSE on the middle bottleneck wins. The smaller learning rate wins a tie. A non-finite probe scores infinity.",
+  "selection_rule": "If reconstruction error were the only criterion, choose the clean autoencoder with the lowest best validation MSE. A tie keeps the smaller bottleneck. The test set is not used for this choice.",
+  "noise_sigma": 0.25,
+  "noise_seed": 26003,
+  "corruption": "Additive Gaussian noise with sigma 0.25 on images in [0, 1], then clipped to [0, 1]. This is a corruption a pixel-wise reconstruction can average out. One frozen noisy validation set and one frozen noisy test set are drawn from Generator(26003), validation first. Training batches draw new noise and do not read those files.",
+  "denoiser": "Same architecture and learning rate as the clean autoencoder selected on validation. Inputs are noisy, targets are clean, no class labels. The checkpoint is the lowest MSE on the frozen noisy validation set.",
+  "classifier": "The Q1a matched CNN with the highest validation accuracy. The lower seed wins a tie. It is frozen. It was first introduced in Q1a. Inputs are mapped with the Q1 training mean and std after reconstruction or corruption, which is the transform that CNN was trained with.",
+  "probe_C": [0.01, 0.1, 1.0, 10.0, 100.0],
+  "probe_selection": "Multinomial logistic regression on the frozen code. Standardise with the training-code mean and std. Highest validation accuracy wins. The smaller C wins a tie. One test evaluation after that choice. Encoders are not fine-tuned.",
+  "expectations_before_training": {
+    "part_a": "Validation MSE should fall as the bottleneck grows from 32 to 128 to 512, because the decoder is given a wider code and nothing else changes. I expect to select 512. A gap of only a few percent between 128 and 512 would mean the extra width is not buying much pixel fidelity under this epoch budget.",
+    "part_b": "Sigma 0.25 should drop the frozen CNN below its clean accuracy. The denoiser, trained to map noisy images back to clean ones, should recover more of that accuracy than the clean autoencoder, which was never shown noise. Clean images should remain the best. Pixel MSE and classification can disagree: a blurry but class-correct reconstruction can have worse MSE than a sharp wrong one.",
+    "part_c": "A wider code should reconstruct better. It should also hold at least as much linearly readable class information, but the gain in probe accuracy can be smaller than the gain in MSE if the extra dimensions store texture the linear probe does not use. I will not claim they move together unless the test numbers do."
+  }
+}

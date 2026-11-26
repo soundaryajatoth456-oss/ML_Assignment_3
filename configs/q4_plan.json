@@ -1,0 +1,33 @@
+{
+  "author": "Praveen",
+  "roll": "m26csa003",
+  "seed": 26003,
+  "question": "Q4",
+  "written_before_any_fit": "2026-11-10T17:48:52+05:30",
+  "representation": "Penultimate features of the Q1a matched CNN: the 160-d vector after global average pooling and before the linear head. The network is frozen. The checkpoint is the seed with the highest Q1 validation accuracy; the lower seed wins a tie. This representation was first introduced in Q1a. Q4 does not change it.",
+  "subset_per_class": 200,
+  "subset_seed": 26003,
+  "subset_size": 2000,
+  "subset_rule": "200 images from each class inside the 45,000 training split, drawn with numpy Generator(26003), then sorted. The file is written before any SVM is fit and is reused for every C and every kernel. Validation stays the full 5,000. The test set is not used to build the subset.",
+  "standardisation": "Mean and std are fit on the 2,000 training features only and applied to validation and test.",
+  "kernels": ["linear", "poly", "rbf"],
+  "polynomial": "degree 3, coef0 1, gamma scale. Degree and gamma are not searched.",
+  "rbf": "gamma scale. Gamma is not searched.",
+  "C_values": [0.01, 0.1, 1.0, 10.0, 100.0],
+  "C_span": "0.01 to 100 is four orders of magnitude, five values.",
+  "svm_selection_rule": "Highest validation accuracy. A tie keeps the smaller support-vector fraction, then the smaller C, then the kernel name in alphabetical order.",
+  "test_rule": "The selected kernel and C are evaluated once on the official test set.",
+  "hard_pairs_rule": "After that single test evaluation, rank unordered class pairs by the sum of the two off-diagonal confusion counts. Keep the three largest. A tie keeps the smaller class index. This uses test labels to choose which pairs to inspect, which part (b) asks for, and it does not change C or the kernel.",
+  "boundary": "For a pair, the score is that column of the one-vs-one decision function. Positive class is the one with the higher mean score on the training subset. Closest test points are those of the two classes with the smallest absolute score. Training support vectors are the support vectors of that binary problem, up to eight with the largest absolute dual coefficient.",
+  "clustering_method": "KMeans",
+  "cluster_k": [5, 8, 10, 12, 15, 20],
+  "preferred_k": 10,
+  "cluster_selection_rule": "Fit on the same 2,000 standardised training features, with no labels passed to KMeans. Score k by validation NMI. The higher NMI wins. A tie keeps the k closer to 10, then the smaller k. Test labels are used only after the test points have been assigned.",
+  "disagreement_rule": "Map each cluster to the majority class on the training subset. Compare per-class test recall of the selected SVM with per-class test recall of that map. The disagreement class is the one with the largest SVM recall minus cluster recall.",
+  "batch_size": 256,
+  "expectations_before_fitting": {
+    "svm": "On a 160-d CNN code I expect the linear kernel to be competitive, because the CNN head was itself linear. A large C should raise the support-vector fraction and can overfit: training accuracy up, validation accuracy flat or down. A very small C should underfit: both accuracies low and, for a soft-margin SVM, many points inside a wide margin. RBF with a large C is the setting most likely to memorise the 2,000 points.",
+    "pairs": "The hardest test pairs should be visually similar classes, such as cat/dog or deer/horse, and their near-boundary test images should be the ambiguous ones. That is a guess about CIFAR-10, not a measured result.",
+    "clustering": "KMeans does not use labels, so its test majority-vote accuracy should land below the SVM. I expect at least one class that the SVM recalls well and the clusters mix with a neighbour."
+  }
+}

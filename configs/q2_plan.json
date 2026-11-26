@@ -1,0 +1,30 @@
+{
+  "author": "Praveen",
+  "roll": "m26csa003",
+  "seed": 26003,
+  "question": "Q2",
+  "written_before_training": "2026-11-10T17:48:52+05:30",
+  "q1_fairness_sha256": "83592a28756f0a14e26ba972e6b82548e1af5ad2862d5af39b06ca7cba9ac09c",
+  "q1_final_models": ["mlp_matched", "cnn_matched", "mlp_wide", "mlp_regularised"],
+  "part_a": "Q2a does not train a new pair. It reuses the matched MLP and the matched CNN from Q1a, where the fairness criterion was written before those results. The reason proposed from that comparison is missing spatial weight sharing: the CNN reuses a 3x3 filter at every position and the MLP has a separate weight for every pixel. Capacity and overfitting were the other explanations tested in Q1a, and neither closed the gap.",
+  "models": ["mlp_matched", "cnn_matched"],
+  "parameter_counts": {
+    "mlp_matched": 201482,
+    "cnn_matched": 197194
+  },
+  "architecture_introduced_in": "Q1a",
+  "fairness_for_retraining": "Parts (b) and (c) retrain both models with the Q1 final recipe and no new search: AdamW, the Q1 learning rate 0.003, weight decay 0.0001, dropout 0, 30 epochs, cosine schedule, batch 128, no augmentation, no batch norm. Seeds 26003, 26004 and 26005 are all reported. The checkpoint is the earliest epoch with the highest validation accuracy. The same transform is applied to train, validation and test.",
+  "learning_rate": 0.003,
+  "epochs": 30,
+  "batch_size": 128,
+  "seeds": [26003, 26004, 26005],
+  "retrain_conditions": ["permuted", "grayscale"],
+  "permutation_seed": 26003,
+  "permutation": "One permutation of the 1024 spatial positions, drawn with numpy Generator(26003). Applied to every image and every channel. Pixel values inside a channel are reordered, not replaced, and channels are not mixed. Colour mean and std from Q1 stay valid because a spatial permutation does not change them.",
+  "grayscale": "Luma 0.2989 R + 0.5870 G + 0.1140 B, repeated onto three channels so both models keep their Q1 parameter counts. Mean and population std are computed on the training split only.",
+  "confidence": "Confidence is the maximum softmax probability. For every model, condition and seed, record mean confidence on correct test predictions, mean confidence on incorrect test predictions, the fraction of errors with confidence at least 0.9, and the 10x10 confusion counts. The confusion figure uses the CNN seed 26003.",
+  "expectations_before_training": {
+    "part_b": "A fixed spatial permutation does not change the functions an MLP can represent, so the matched MLP's test accuracy should stay within about 3 points of its clean 50.4%. The matched CNN should drop by well more than 10 points, toward the MLP, because a 3x3 filter no longer sits on a real neighbourhood. If the CNN stays within 5 points of its clean 73.9%, the spatial explanation from part (a) is not supported.",
+    "part_c": "The two explanations are: the CNN uses local shape through weight sharing, or the CNN uses colour. Grayscale keeps spatial structure and removes colour. If shape is the reason, the grayscale CNN should stay more than 10 points above the grayscale MLP and should remain clearly above 60%. If colour is the reason, the CNN should fall close to the MLP. Confidence is measured rather than predicted: the report will compare correct and incorrect confidence and will not claim calibration beyond those two averages."
+  }
+}

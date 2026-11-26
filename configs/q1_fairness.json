@@ -1,0 +1,127 @@
+{
+  "author": "Praveen",
+  "roll": "m26csa003",
+  "seed": 26003,
+  "question": "Q1",
+  "written_before_training": "2026-11-10T13:00:14+05:30",
+  "reason_under_test": "An MLP is weak on CIFAR-10 because it has no spatial weight sharing. Each weight is tied to one pixel position, so a local pattern that moves has to be relearned in every position.",
+  "alternative_capacity": "The matched MLP might be weak only because a matched parameter budget forces its hidden layer to be narrow. A much wider MLP, trained with the same optimiser, epoch budget, learning rate and images, tests this.",
+  "alternative_overfitting": "The matched MLP might fit the training set and fail on new images. The same MLP with dropout and a stronger weight decay, and no change to the images, tests this. Augmentation is not used on any Q1a model, so the pixels each model sees are the same.",
+  "fairness": {
+    "same_split": "splits/split_seed26003.npz",
+    "same_normalisation": "train-split mean and population std only",
+    "optimiser": "AdamW, betas (0.9, 0.999), same cosine schedule down to zero",
+    "epoch_budget": "30 epochs for every Q1a model. The checkpoint with the highest validation accuracy is kept. Ties keep the earliest epoch.",
+    "learning_rate": "One learning rate for every Q1a model and every seed. It is chosen by an 8-epoch validation probe of the matched MLP and the matched CNN only.",
+    "probe_rule": "Score of a learning rate is the mean of the two models' best validation accuracies. The higher score wins. The smaller learning rate wins a tie. A probe that hits a non-finite loss scores 0.",
+    "tuning_effort": "The wide MLP and the regularised MLP do not get their own learning-rate search.",
+    "augmentation": "none",
+    "batch_norm": false,
+    "batch_size": 128,
+    "parameter_match": "Matched CNN and matched MLP differ by less than 10 percent. The wide MLP has at least 8 times as many parameters as the matched MLP.",
+    "seeds": "26003, 26004 and 26005. All three are reported. The seed with the best test accuracy is not selected.",
+    "test_set": "Opened only after the learning rate and the checkpoints are fixed. Not used to choose anything."
+  },
+  "models": {
+    "mlp_matched": {
+      "class": "MLP",
+      "hidden": [
+        64,
+        64
+      ],
+      "dropout": 0.0,
+      "weight_decay": 0.0001,
+      "parameters": 201482,
+      "description": "Flatten 32x32x3, Linear 3072-64, ReLU, Linear 64-64, ReLU, Linear 64-10. No dropout, no batch norm."
+    },
+    "cnn_matched": {
+      "class": "ConvNet",
+      "widths": [
+        64,
+        96,
+        160
+      ],
+      "dropout": 0.0,
+      "weight_decay": 0.0001,
+      "parameters": 197194,
+      "description": "Three 3x3 convolutions with 64, 96 and 160 channels, ReLU and 2x2 max-pool after each, then global average pooling and Linear to 10. No batch norm."
+    },
+    "mlp_wide": {
+      "class": "MLP",
+      "hidden": [
+        512,
+        256
+      ],
+      "dropout": 0.0,
+      "weight_decay": 0.0001,
+      "parameters": 1707274,
+      "description": "Same MLP shape as the matched model, but wider: Linear 3072-512, ReLU, Linear 512-256, ReLU, Linear 256-10. About 8.5 times the matched parameter count."
+    },
+    "mlp_regularised": {
+      "class": "MLP",
+      "hidden": [
+        64,
+        64
+      ],
+      "dropout": 0.3,
+      "weight_decay": 0.001,
+      "parameters": 201482,
+      "description": "Same widths as the matched MLP. Dropout 0.3 after each hidden ReLU, and weight decay 0.001 instead of 0.0001."
+    }
+  },
+  "probe": {
+    "models": [
+      "mlp_matched",
+      "cnn_matched"
+    ],
+    "learning_rates": [
+      0.0003,
+      0.001,
+      0.003
+    ],
+    "epochs": 8,
+    "seed": 26003,
+    "rule": "mean_best_val_of_matched_mlp_and_cnn_smaller_lr_wins_ties"
+  },
+  "final": {
+    "models": [
+      "mlp_matched",
+      "cnn_matched",
+      "mlp_wide",
+      "mlp_regularised"
+    ],
+    "epochs": 30,
+    "seeds": [
+      26003,
+      26004,
+      26005
+    ],
+    "batch_size": 128,
+    "optimiser": "AdamW",
+    "schedule": "cosine annealing to 0 across the 30 epochs"
+  },
+  "memorisation": {
+    "model": "mlp_wide",
+    "architecture_introduced_in": "Q1a",
+    "weight_decay": 0.0,
+    "dropout": 0.0,
+    "epochs": 40,
+    "seed": 26003,
+    "fractions": [
+      0.0,
+      0.2,
+      0.5,
+      1.0
+    ],
+    "corruption_seed": 26003,
+    "corruption": "Stratified inside each class. The new label is drawn uniformly from the other nine classes, so a corrupted example does not keep its true label.",
+    "validation_labels": "The 5,000 validation labels stay clean.",
+    "why_weight_decay_is_off": "Weight decay opposes fitting arbitrary labels. Q1b asks for enough capacity to fit examples that should not generalise, so this run turns weight decay off. It is not part of the fair Q1a comparison."
+  },
+  "expectations_before_training": {
+    "matched_comparison": "The matched CNN's best validation accuracy should sit above the matched MLP. A gap of only a couple of points would be weak evidence. I expect something on the order of 10 points or more, because the MLP cannot reuse a local pattern at a new position. Without augmentation, a rough guess is 45-60% for the MLP and 60-75% for the CNN. Those bands are guesses, not measurements.",
+    "capacity": "The wide MLP should beat the matched MLP if the narrow hidden layer was the problem. It should stay below the matched CNN if missing weight sharing is the main cause. If the wide MLP reaches the CNN, the capacity explanation survives and the inductive-bias claim is too strong.",
+    "overfitting": "Dropout and a stronger weight decay should not close a large gap to the CNN. They can raise validation accuracy only if the matched MLP's training accuracy is well above its validation accuracy. If that gap is small, the regularised MLP will not help, and may do worse.",
+    "memorisation": "With weight decay off, fit to the corrupted labels should climb at 50% and 100% noise. At 100% noise, validation accuracy should stay near chance or rise only a little, while the fit to the random labels climbs. I will say that useful structure appeared before memorisation only if, at 20% or 50% noise, validation accuracy rises while the fit to corrupted labels is still near chance, and the noise fit keeps rising after validation has peaked. If the two rise together, the curves do not separate them."
+  }
+}

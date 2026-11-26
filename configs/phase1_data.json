@@ -1,0 +1,18 @@
+{
+  "question": "shared data setup, before Q1",
+  "dataset": "CIFAR10",
+  "download": "torchvision.datasets.CIFAR10",
+  "official_train_images": 50000,
+  "official_test_images": 10000,
+  "train_images": 45000,
+  "val_images": 5000,
+  "seed": 26003,
+  "seed_meaning": "numeric characters of roll m26csa003, in order",
+  "stratification": "exactly 4500 train and 500 validation images in every class",
+  "split_rng": "numpy.random.default_rng(seed), independent of the global RNG",
+  "stored_index_order": "sorted, so the file is the set of images and not an epoch order",
+  "pixel_scale": "uint8 / 255 stored as float32 in [0, 1]",
+  "normalisation": "per-channel mean and population std of the float32 training pixels, reduced in float64",
+  "normalisation_split": "train only",
+  "test_use": "shape and label counts only in this phase; pixels are not reduced into any saved statistic"
+}
