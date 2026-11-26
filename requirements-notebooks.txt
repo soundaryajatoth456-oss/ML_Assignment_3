@@ -1,0 +1,9 @@
+# Optional. Used only to execute the two notebooks from a fresh kernel.
+# Install after requirements.txt, with the cluster module loaded:
+#   module load python/3.10.pytorch
+#   PYTHONNOUSERSITE=1 .venv/bin/python -m pip install -r requirements-notebooks.txt
+ipykernel==7.3.0
+nbclient==0.11.0
+nbformat==5.11.1
+jupyter_client==8.10.0
+ipython==8.39.0
